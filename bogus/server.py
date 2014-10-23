@@ -39,7 +39,6 @@ class BogusHandler(SocketServer.StreamRequestHandler):
             for path, handler in self.handlers[self.method]:
                 if path == self.path:
                     return handler
-                    break
 
     def parse_request(self):
         """
