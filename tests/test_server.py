@@ -28,6 +28,12 @@ class BogusTest(unittest.TestCase):
         response = requests.get("{}/something-else".format(url))
         self.assertEqual(response.status_code, 200)
 
+    def test_should_register_a_handler(self):
+        b = Bogus()
+        handler = lambda: ("my response", 201)
+        b.register(handler, method="POST")
+        self.assertIn(handler, BogusHandler.handlers["POST"])
+
 
 class BogusHandlerTest(unittest.TestCase):
 

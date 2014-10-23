@@ -23,6 +23,7 @@ class BogusHandler(SocketServer.StreamRequestHandler):
 
         handler = self.find_handler()
         if handler:
+            # TODO: validate handler output
             body, status = handler()
             self.request.sendall("HTTP/1.1 {0} OK\r\n{1}".format(status, body))
             return
@@ -95,3 +96,6 @@ class Bogus(object):
             continue
         self.url = "http://{0}:{1}".format(httpd.server_address[0], httpd.server_address[1])
         return self.url
+
+    def register(self, handler, method="GET"):
+        BogusHandler.register_handler(handler, method)
