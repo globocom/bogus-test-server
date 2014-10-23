@@ -44,6 +44,7 @@ class BogusHandlerTest(unittest.TestCase):
         handler = ("/profile", lambda: ("Profile", 200))
         BogusHandler.register_handler(handler)
         self.assertIn(handler, BogusHandler.handlers["GET"])
+
         handler = ("/register", lambda: ("Register", 200))
         BogusHandler.register_handler(handler)
         self.assertIn(handler, BogusHandler.handlers["GET"])
@@ -53,7 +54,9 @@ class BogusHandlerTest(unittest.TestCase):
         self.assertIn(handler, BogusHandler.handlers["POST"])
 
     def test_should_register_handler_and_respond_to_request_for_that_handler(self):
+        BogusHandler.register_handler(("/register", lambda: ("Register", 200)), method="POST")
         BogusHandler.register_handler(("/profile", lambda: ("Profile", 200)))
+
         bh = BogusHandler(self.request_mock, "client_address", "server")
         bh.handle()
         expected_response = "HTTP/1.1 200 OK\r\nProfile"
