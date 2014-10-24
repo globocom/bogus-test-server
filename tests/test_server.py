@@ -41,6 +41,7 @@ class BogusHandlerTest(unittest.TestCase):
         self.request_mock = Mock()
         # mocks the request line, see http://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html#sec5
         self.request_mock.makefile.return_value.readline.return_value = "GET /profile HTTP/1.1"
+        BogusHandler.handlers = {}
 
     def test_should_have_a_handle_method(self):
         bh = BogusHandler(self.request_mock, "client_address", "server")
@@ -70,7 +71,6 @@ class BogusHandlerTest(unittest.TestCase):
 
     def test_send_response_should_first_store_it_on_instance_variable(self):
         BogusHandler.register_handler(("/user/create", lambda: ("user created", 201)), method="POST")
-
         self.request_mock.makefile.return_value.readline.return_value = "POST /user/create HTTP/1.1"
         bh = BogusHandler(self.request_mock, "client_address", "server")
         bh.handle()
@@ -81,4 +81,15 @@ class BogusHandlerTest(unittest.TestCase):
         self.request_mock.sendall.assert_called_with(expected)
 
     def test_handle_should_validate_an_invalid_handler_return(self):
-        pass
+        BogusHandler.register_handler(("/profile", lambda: (200)))
+
+        with self.assertRaises(ValueError) as e:
+            bh = BogusHandler(self.request_mock, "client_address", "server")
+            bh.handle()
+            self.assertEqual(e.message, "handler function should return 2 arguments.")
+
+    def test_call_handler_calls_handler_returns_response_and_raises_exception_if_its_invalid(self):
+        bh = BogusHandler(self.request_mock, "client_address", "server")
+        with self.assertRaises(ValueError) as e:
+            bh._call_handler(lambda: 200)
+            self.assertEqual(e.message, "handler function should return 2 arguments.")

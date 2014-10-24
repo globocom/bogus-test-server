@@ -24,7 +24,7 @@ class BogusHandler(SocketServer.StreamRequestHandler):
         handler = self.find_handler()
         if handler:
             # TODO: validate handler output
-            body, status = handler()
+            body, status = self._call_handler(handler)
             response = "HTTP/1.1 {0} OK\r\n{1}".format(status, body)
             self.response = response
             self.request.sendall(response)
@@ -32,6 +32,18 @@ class BogusHandler(SocketServer.StreamRequestHandler):
 
         self.response = "HTTP/1.1 200 OK"
         self.request.sendall(self.response)
+
+    def _call_handler(self, handler, *args):
+        response = handler()
+        if type(response) is not tuple:
+            raise ValueError("handler function should return 2 arguments.")
+        if len(response) != 2:
+            raise ValueError("handler function should return 2 arguments.")
+        if type(response[1]) is not int:
+            raise ValueError("handler function second return type must be an integer indicating the status code.")
+
+        return response
+
 
     def find_handler(self):
         if not hasattr(self, "handlers"):
