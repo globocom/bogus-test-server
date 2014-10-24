@@ -25,10 +25,13 @@ class BogusHandler(SocketServer.StreamRequestHandler):
         if handler:
             # TODO: validate handler output
             body, status = handler()
-            self.request.sendall("HTTP/1.1 {0} OK\r\n{1}".format(status, body))
+            response = "HTTP/1.1 {0} OK\r\n{1}".format(status, body)
+            self.response = response
+            self.request.sendall(response)
             return
 
-        self.request.sendall("HTTP/1.1 200 OK")
+        self.response = "HTTP/1.1 200 OK"
+        self.request.sendall(self.response)
 
     def find_handler(self):
         if not hasattr(self, "handlers"):

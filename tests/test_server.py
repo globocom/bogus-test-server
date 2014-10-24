@@ -67,3 +67,18 @@ class BogusHandlerTest(unittest.TestCase):
         bh.handle()
         expected_response = "HTTP/1.1 200 OK\r\nProfile"
         self.request_mock.sendall.assert_called_with(expected_response)
+
+    def test_send_response_should_first_store_it_on_instance_variable(self):
+        BogusHandler.register_handler(("/user/create", lambda: ("user created", 201)), method="POST")
+
+        self.request_mock.makefile.return_value.readline.return_value = "POST /user/create HTTP/1.1"
+        bh = BogusHandler(self.request_mock, "client_address", "server")
+        bh.handle()
+
+        self.assertTrue(hasattr(bh, "response"))
+        expected = "HTTP/1.1 201 OK\r\nuser created"
+        self.assertEqual(bh.response, expected)
+        self.request_mock.sendall.assert_called_with(expected)
+
+    def test_handle_should_validate_an_invalid_handler_return(self):
+        pass
