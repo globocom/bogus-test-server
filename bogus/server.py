@@ -75,6 +75,7 @@ class BogusHandler(SocketServer.StreamRequestHandler):
 
         self.method = method
         self.path = path
+        Bogus.called_paths.append(path) # so the user can know what has been called
 
 
     @classmethod
@@ -95,6 +96,8 @@ class BogusHandler(SocketServer.StreamRequestHandler):
 
 
 class Bogus(object):
+
+    called_paths = []
 
     def __init__(self, promiscuous=True):
         self.promiscuous = promiscuous

@@ -34,6 +34,15 @@ class BogusTest(unittest.TestCase):
         b.register(handler, method="POST")
         self.assertIn(handler, BogusHandler.handlers["POST"])
 
+    def test_should_have_called_paths(self):
+        b = Bogus()
+        url = b.serve()
+        response = requests.get("{}/something".format(url))
+        self.assertTrue(hasattr(Bogus, "called_paths"))
+        response = requests.get("{}/something-else".format(url))
+        self.assertIn("/something", Bogus.called_paths)
+        self.assertIn("/something-else", Bogus.called_paths)
+
 
 class BogusHandlerTest(unittest.TestCase):
 
