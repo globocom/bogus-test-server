@@ -20,17 +20,18 @@ class BogusHandler(SocketServer.StreamRequestHandler):
         """
         self.raw_requestline = self.rfile.readline(65537)
         self.parse_request()
+        headers = "Content-Length: {}"
 
         handler = self.find_handler()
         if handler:
-            # TODO: validate handler output
             body, status = self._call_handler(handler)
-            response = "HTTP/1.1 {0} OK\r\n{1}".format(status, body)
+            headers = headers.format(len(body))
+            response = "HTTP/1.1 {0} OK\r\n{1}\r\n\r\n{2}".format(status, headers, body)
             self.response = response
             self.request.sendall(response)
             return
 
-        self.response = "HTTP/1.1 200 OK"
+        self.response = "HTTP/1.1 200 OK\r\n{}".format(headers.format(0))
         self.request.sendall(self.response)
 
     def _call_handler(self, handler, *args):
@@ -43,7 +44,6 @@ class BogusHandler(SocketServer.StreamRequestHandler):
             raise ValueError("handler function second return type must be an integer indicating the status code.")
 
         return response
-
 
     def find_handler(self):
         if not hasattr(self, "handlers"):
@@ -77,7 +77,6 @@ class BogusHandler(SocketServer.StreamRequestHandler):
         self.path = path
         Bogus.called_paths.append(path) # so the user can know what has been called
 
-
     @classmethod
     def register_handler(cls, handler, method="GET"):
         """
@@ -102,10 +101,10 @@ class Bogus(object):
     def __init__(self, promiscuous=True):
         self.promiscuous = promiscuous
 
-    """
-    Starts up the HTTP server.
-    """
     def serve(self):
+        """
+        Starts up the HTTP server.
+        """
         httpd = SocketServer.TCPServer(("127.0.0.1", 0), BogusHandler)
         thread = Thread(target=httpd.serve_forever)
         thread.setDaemon(True)

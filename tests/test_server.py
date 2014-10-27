@@ -28,11 +28,14 @@ class BogusTest(unittest.TestCase):
         response = requests.get("{}/something-else".format(url))
         self.assertEqual(response.status_code, 200)
 
-    def test_should_register_a_handler(self):
+    def test_should_register_a_handler_and_request_it(self):
         b = Bogus()
-        handler = lambda: ("my response", 201)
+        handler = ("/json", lambda: ('[{"foo":"bar"}]', 201))
         b.register(handler, method="POST")
         self.assertIn(handler, BogusHandler.handlers["POST"])
+        url = b.serve()
+        response = requests.post("{}/json".format(url))
+        self.assertEqual('[{"foo":"bar"}]', response.content)
 
     def test_should_have_called_paths(self):
         b = Bogus()
@@ -51,6 +54,7 @@ class BogusHandlerTest(unittest.TestCase):
         # mocks the request line, see http://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html#sec5
         self.request_mock.makefile.return_value.readline.return_value = "GET /profile HTTP/1.1"
         BogusHandler.handlers = {}
+        self.response_line = "HTTP/1.1 {} OK\r\nContent-Length: {}\r\n\r\n{}"
 
     def test_should_have_a_handle_method(self):
         bh = BogusHandler(self.request_mock, "client_address", "server")
@@ -75,7 +79,8 @@ class BogusHandlerTest(unittest.TestCase):
 
         bh = BogusHandler(self.request_mock, "client_address", "server")
         bh.handle()
-        expected_response = "HTTP/1.1 200 OK\r\nProfile"
+        expected_response = "Profile"
+        expected_response = self.response_line.format(200, len(expected_response), expected_response)
         self.request_mock.sendall.assert_called_with(expected_response)
 
     def test_send_response_should_first_store_it_on_instance_variable(self):
@@ -85,7 +90,8 @@ class BogusHandlerTest(unittest.TestCase):
         bh.handle()
 
         self.assertTrue(hasattr(bh, "response"))
-        expected = "HTTP/1.1 201 OK\r\nuser created"
+        expected = "user created"
+        expected = self.response_line.format(201, len(expected), expected)
         self.assertEqual(bh.response, expected)
         self.request_mock.sendall.assert_called_with(expected)
 
