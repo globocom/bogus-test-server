@@ -22,7 +22,12 @@ class BogusHandler(SocketServer.StreamRequestHandler):
         self.parse_request()
         headers = "Content-Length: {}"
 
-        handler = self.find_handler()
+        handler, custom_headers = self.find_handler()
+        if custom_headers:
+            custom_headers = ['{}: {}'.format(k, v) for k, v in custom_headers.items()]
+            custom_headers = "\r\n".join(custom_headers)
+            headers = "\r\n".join([headers, custom_headers])
+
         if handler:
             body, status = self._call_handler(handler)
             headers = headers.format(len(body))
@@ -47,14 +52,16 @@ class BogusHandler(SocketServer.StreamRequestHandler):
 
     def find_handler(self):
         if not hasattr(self, "handlers"):
-            return False
+            return False, False
 
         if not self.method in self.handlers.keys():
-            return False
+            return False, False
         else:
-            for path, handler in self.handlers[self.method]:
+            for handler_dict in self.handlers[self.method]:
+                path, handler_fn = handler_dict["handler"]
                 if path == self.path:
-                    return handler
+                    return handler_fn, handler_dict["headers"]
+        return False, False
 
     def parse_request(self):
         """
@@ -78,7 +85,7 @@ class BogusHandler(SocketServer.StreamRequestHandler):
         Bogus.called_paths.append(path) # so the user can know what has been called
 
     @classmethod
-    def register_handler(cls, handler, method="GET"):
+    def register_handler(cls, handler, method="GET", headers=None):
         """
         Register a handler within a given method, the default method is get.
         The data structure used to store the handler is a dictionary of arrays, each array
@@ -87,11 +94,11 @@ class BogusHandler(SocketServer.StreamRequestHandler):
         The registered handler should return 2 values, the response body and status code.
         """
         if not hasattr(cls, "handlers"):
-            cls.handlers = {method: [handler]}
+            cls.handlers = {method: [{"handler": handler, "headers": headers}]}
         elif method in cls.handlers.keys():
-            cls.handlers[method].append(handler)
+            cls.handlers[method].append({"handler": handler, "headers": headers})
         else:
-            cls.handlers[method] = [handler]
+            cls.handlers[method] = [{"handler": handler, "headers": headers}]
 
 
 class Bogus(object):
@@ -114,5 +121,5 @@ class Bogus(object):
         self.url = "http://{0}:{1}".format(httpd.server_address[0], httpd.server_address[1])
         return self.url
 
-    def register(self, handler, method="GET"):
-        BogusHandler.register_handler(handler, method)
+    def register(self, handler, method="GET", headers=None):
+        BogusHandler.register_handler(handler, method, headers)

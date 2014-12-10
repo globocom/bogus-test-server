@@ -31,8 +31,9 @@ class BogusTest(unittest.TestCase):
     def test_should_register_a_handler_and_request_it(self):
         b = Bogus()
         handler = ("/json", lambda: ('[{"foo":"bar"}]', 201))
+        handler_dict = {"handler": handler, "headers": None}
         b.register(handler, method="POST")
-        self.assertIn(handler, BogusHandler.handlers["POST"])
+        self.assertIn(handler_dict, BogusHandler.handlers["POST"])
         url = b.serve()
         response = requests.post("{}/json".format(url))
         self.assertEqual('[{"foo":"bar"}]', response.content)
@@ -45,6 +46,16 @@ class BogusTest(unittest.TestCase):
         response = requests.get("{}/something-else".format(url))
         self.assertIn("/something", Bogus.called_paths)
         self.assertIn("/something-else", Bogus.called_paths)
+
+    def test_should_have_set_headers_and_return_them(self):
+        b = Bogus()
+        handler = ("/headers", lambda: ('[{"foo":"bar"}]', 201))
+        handler_dict = {"handler": handler, "headers": {"Location": "/foo/bar"}}
+        b.register(handler, method="POST", headers={"Location": "/foo/bar"})
+        self.assertIn(handler_dict, BogusHandler.handlers["POST"])
+        url = b.serve()
+        response = requests.post("{}/headers".format(url))
+        self.assertEqual(response.headers.get("Location"), "/foo/bar")
 
 
 class BogusHandlerTest(unittest.TestCase):
@@ -62,16 +73,18 @@ class BogusHandlerTest(unittest.TestCase):
 
     def test_should_register_handlers(self):
         handler = ("/profile", lambda: ("Profile", 200))
+        handler_dict = {"handler": handler, "headers": None}
         BogusHandler.register_handler(handler)
-        self.assertIn(handler, BogusHandler.handlers["GET"])
+        self.assertIn(handler_dict, BogusHandler.handlers["GET"])
 
         handler = ("/register", lambda: ("Register", 200))
+        handler_dict = {"handler": handler, "headers": None}
         BogusHandler.register_handler(handler)
-        self.assertIn(handler, BogusHandler.handlers["GET"])
+        self.assertIn(handler_dict, BogusHandler.handlers["GET"])
 
-        handler = ("/register", lambda: ("Register", 200))
+        handler_dict = {"handler": handler, "headers": None}
         BogusHandler.register_handler(handler, method="POST")
-        self.assertIn(handler, BogusHandler.handlers["POST"])
+        self.assertIn(handler_dict, BogusHandler.handlers["POST"])
 
     def test_should_register_handler_and_respond_to_request_for_that_handler(self):
         BogusHandler.register_handler(("/register", lambda: ("Register", 200)), method="POST")

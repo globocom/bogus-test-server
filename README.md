@@ -20,10 +20,10 @@ as defined in your function.
 
 You can also pass parameters to a request and receive them in your handler:
 
-#TODO: review how to register endpoints that receive parameters in url
 ```python
 b = Bogus()
 b.register("/search", lambda x: ("Your search for {} didn't find anything".format(x), 200))
+b.register("/foo/new", lambda: ("created", 201), headers={"Location": "http://localhost:8888/foo/1"})
 b.serve()
 ```
 
